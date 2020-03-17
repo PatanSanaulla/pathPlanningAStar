@@ -25,6 +25,9 @@ class step:
 		else:
 			self.costToCome = parent.costToCome + cost;
 		self.costToGo = float(( (GOAL_POINT[0]-self.position[0])**2 + (GOAL_POINT[1]-self.position[1])**2 )**(0.5)) #Eucleadian Distance
+		#self.costToGo = abs(self.position[0]-GOAL_POINT[0])+abs(self.position[1]-GOAL_POINT[1]) #Manhattan Distance
+		#self.costToGo = max(abs(self.position[0] - GOAL_POINT[0]), abs(self.position[1] - GOAL_POINT[1]))  # Diagonal Distance
+
 
 		self.addToGraph()
 
@@ -162,7 +165,7 @@ class step:
 
 def stepsTakenToCompute():
 	for eachStep in STEP_OBJECT_LIST:
-		updateTheStep(eachStep.position, startColor, RADIUS)
+		colorTheStep(eachStep.position, traverseColor, RADIUS)
 		if eachStep.position == GOAL_POINT:
 			break
         
