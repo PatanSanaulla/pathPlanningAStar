@@ -20,7 +20,7 @@ traverseColor = (255,255,0) #yellow
 
 gameDisplay = pygame.display.set_mode((MAX_X,MAX_Y))
 gameDisplay.fill(backgroundColor)
-
+#Drawing a circle
 pygame.draw.circle(gameDisplay, obstacleColor, (225,50), 25)
 #Drawing Polygon
 pygame.draw.polygon(gameDisplay, obstacleColor, ((25,15),(75,15),(100,50),(75,80),(50,50),(20,80)))
@@ -43,16 +43,17 @@ def colorTheStep(position, color, RADIUS):
     if RADIUS == None or RADIUS == 0:
         pygame.gfxdraw.pixel(gameDisplay, position[0], position[1], color)
     else:
-        pygame.draw.circle(gameDisplay, color, (position[0],position[1]), RADIUS)
+        pygame.draw.circle(gameDisplay, color, (int(position[0]),int(position[1])), RADIUS)
     pygame.display.update()
 
 
-def showPath(pathList, RADIUS):
+def showPath(Goalpoint, pathList, RADIUS):
+	pygame.draw.circle(gameDisplay, startColor, (Goalpoint[0],Goalpoint[1]), int(1.5))
 	for step in pathList:
 		if RADIUS == None or RADIUS == 0:
 			pygame.gfxdraw.pixel(gameDisplay, step[0], step[1], pathColor)
 		else:
-			pygame.draw.circle(gameDisplay, pathColor, (step[0], step[1]), RADIUS)
+			pygame.draw.circle(gameDisplay, pathColor, (int(step[0]), int(step[1])), RADIUS)
 		pygame.display.update()
     
 #################################################################################################################################################
@@ -119,7 +120,6 @@ def isValidStep(point,pad):  # def obstacleCheck_rigid
         flag = False
 
     return flag
-
 
 def isValidStep2(position, CLEARANCE):
 	pos = tuple(position)
