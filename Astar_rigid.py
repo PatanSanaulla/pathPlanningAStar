@@ -24,7 +24,7 @@ class step:
 	def __init__(self, parent, position, angle, cost):
 		self.position = position # [x, y]
 		self.parent = parent
-		self.angle = angle
+		self.angle = angle%(2*math.pi)
 		if parent == None:
 			self.costToCome = 0.0
 		else:
@@ -68,9 +68,9 @@ class step:
 def backtrack(stepObj):
 	pathValues = []
 	while stepObj.parent != None:
-		pathValues.append(stepObj.position)
+		pathValues.append([stepObj.position[0], stepObj.position[1], stepObj.angle])
 		stepObj = stepObj.parent
-	pathValues.append(stepObj.position)
+	pathValues.append([stepObj.position[0], stepObj.position[1], stepObj.angle])
     
 	pathValues.reverse()
 	showPath(START_POINT, GOAL_POINT,STEP_OBJECT_LIST, pathValues)
@@ -154,7 +154,7 @@ if isPossible == 2:
 
 	while inGoal(eachStep.position) == False:#to keep traversing until the goal area is found
 		eachStep.generateSteps()
-		print(eachStep.position)
+		print(eachStep.position, math.degrees(eachStep.angle))
 		STEP_OBJECT_LIST.sort()
 
 		while True:
