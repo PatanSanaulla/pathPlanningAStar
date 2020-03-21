@@ -7,6 +7,7 @@ import sys
 START_POINT = [] # [x, y]
 GOAL_POINT = [] # [x, y]
 #STEPS_LIST = set([])
+EXPLORED = []
 VISITED = []
 THRESHOLD = 0.5
 STEP_OBJECT_LIST = []
@@ -43,6 +44,7 @@ class step:
 
 
 	def generateSteps(self):
+		EXPLORED.append(self)
 		for i in range(int(180/30)-1):
 			angle = (THETA*i)+self.angle#math.radians(self.angle)
 			newX = thresholding((math.cos(angle)*STEP_SIZE)+self.position[0])
@@ -59,12 +61,6 @@ class step:
 			else:
 				return
 
-#def stepsTakenToCompute():
-#	for eachStep in STEP_OBJECT_LIST:
-#		colorTheStep(eachStep.position, eachStep)
-#		if eachStep.position == GOAL_POINT:
-#			break
-
 def backtrack(stepObj):
 	pathValues = []
 	while stepObj.parent != None:
@@ -73,7 +69,7 @@ def backtrack(stepObj):
 	pathValues.append([stepObj.position[0], stepObj.position[1], stepObj.angle])
     
 	pathValues.reverse()
-	showPath(START_POINT, GOAL_POINT,STEP_OBJECT_LIST, pathValues)
+	showPath(START_POINT, GOAL_POINT, EXPLORED, pathValues)
 
 
 def inGoal(position):
@@ -103,10 +99,13 @@ def thresholding(val):
 	splitData = str(val).split('.')
 	intData = int(splitData[0])
 	decimalData = int(splitData[1][0])
-	if decimalData >= 5:
-		return intData+0.5
+	if decimalData > 7:
+		return intData+1.0
 	else:
-		return intData+0.0
+		if decimalData > 2:
+			return intData+0.5
+		else:
+			return intData+0.0
 
 #MAIN CODE
 try:
@@ -124,10 +123,6 @@ except:
     print("Exiting the Algorithm")
     sys.exit(0)
     
-#To switch the orgin to the top
-START_POINT[1] = START_POINT[1]
-GOAL_POINT[1] = GOAL_POINT[1]
-
 isPossible = 0
 
 if START_POINT[0] >= 0 and START_POINT[0] <= MAX_X and START_POINT[1] >= 0 and START_POINT[1] <= MAX_Y and (isValidStep(START_POINT, RADIUS+CLEARANCE) == True):
