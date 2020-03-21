@@ -59,13 +59,11 @@ class step:
 			else:
 				return
 
-	
-def stepsTakenToCompute():
-	for eachStep in STEP_OBJECT_LIST:
-		colorTheStep(eachStep.position, traverseColor, RADIUS)
-		if eachStep.position == GOAL_POINT:
-			break
-        
+#def stepsTakenToCompute():
+#	for eachStep in STEP_OBJECT_LIST:
+#		colorTheStep(eachStep.position, eachStep)
+#		if eachStep.position == GOAL_POINT:
+#			break
 
 def backtrack(stepObj):
 	pathValues = []
@@ -75,7 +73,9 @@ def backtrack(stepObj):
 	pathValues.append(stepObj.position)
     
 	pathValues.reverse()
-	showPath(GOAL_POINT,pathValues, RADIUS) 
+	showPath(START_POINT, GOAL_POINT,STEP_OBJECT_LIST, pathValues)
+
+
 def inGoal(position):
 	x, y = position[0], position[1]
 	if ((x - GOAL_POINT[0]) ** 2 + (y - GOAL_POINT[1]) ** 2 <= (1.5)**2):
@@ -122,12 +122,11 @@ try:
 except:
     print("Please enter the proper points: Example: 200 30 30")
     print("Exiting the Algorithm")
-    pygame.quit()
     sys.exit(0)
     
 #To switch the orgin to the top
-START_POINT[1] = MAX_Y - START_POINT[1]
-GOAL_POINT[1] = MAX_Y - GOAL_POINT[1]
+START_POINT[1] = START_POINT[1]
+GOAL_POINT[1] = GOAL_POINT[1]
 
 isPossible = 0
 
@@ -164,20 +163,15 @@ if isPossible == 2:
 				break
         
 	print("Total Cost to reach the final Point:",eachStep.costToCome)
-	stepsTakenToCompute() #Once the whole generation is completed begin the animation
+	#stepsTakenToCompute() #Once the whole generation is completed begin the animation
+
     
 	backtrack(eachStep) #To show the backtrack on the graph
 	now = datetime.now().time()
 	print("end time: ",now)
 else:
     print("Exiting the Algorithm")
-    pygame.quit()
     sys.exit(0)
 
-while True:
-	for inst in pygame.event.get():
-		if inst.type == pygame.QUIT:
-			pygame.quit()
-			quit()
 
-	pygame.display.update()
+
