@@ -26,17 +26,20 @@ class step:
 		self.position = position # [x, y]
 		self.parent = parent
 		self.angle = angle%(2*math.pi)
+		self.xPoint = int(position[0]/THRESHOLD)-1
+		self.yPoint = int(position[1]/THRESHOLD)-1
+		self.anglePoint = (int(angle/THETA)%12)-1
 		if parent == None:
 			self.costToCome = 0.0
 		else:
 			self.costToCome = parent.costToCome + cost;
-		self.costToGo = float(( (GOAL_POINT[0]-self.position[0])**2 + (GOAL_POINT[1]-self.position[1])**2 )**(0.5)) #Eucleadian Distance
-		#self.costToGo = abs(self.position[0]-GOAL_POINT[0])+abs(self.position[1]-GOAL_POINT[1]) #Manhattan Distance
-		#self.costToGo = max(abs(self.position[0] - GOAL_POINT[0]), abs(self.position[1] - GOAL_POINT[1]))  # Diagonal Distance
+		self.cost = self.costToCome + float(( (GOAL_POINT[0]-self.position[0])**2 + (GOAL_POINT[1]-self.position[1])**2 )**(0.5)) #Eucleadian Distance
+		#abs(self.position[0]-GOAL_POINT[0])+abs(self.position[1]-GOAL_POINT[1]) #Manhattan Distance
+		#max(abs(self.position[0] - GOAL_POINT[0]), abs(self.position[1] - GOAL_POINT[1]))  # Diagonal Distance
 		self.addToGraph()
 
 	def __lt__(self, other):
-		return self.costToCome+self.costToGo < other.costToCome+other.costToGo
+		return self.cost < other.cost
 
 
 	def addToGraph(self): 
@@ -81,15 +84,12 @@ def inGoal(position):
 
 def isVisited(stepObj):
     #posAndAngle = [stepObj.position[0], stepObj.position[1]), round(stepObj.angle)]
-    xPoint = int(stepObj.position[0]/THRESHOLD)-1
-    yPoint = int(stepObj.position[1]/THRESHOLD)-1
-    anglePoint = (int(stepObj.angle/THETA)%12)-1
     try:
-        if VISITED[xPoint][yPoint][anglePoint] == 1:
+        if VISITED[stepObj.xPoint][stepObj.yPoint][stepObj.anglePoint] == 1:
             #if posAndAngle in STEPS_LIST:
             return True
         else:
-            VISITED[xPoint][yPoint][anglePoint] = 1
+            VISITED[stepObj.xPoint][stepObj.yPoint][stepObj.anglePoint] = 1
             #STEPS_LIST.add(posAndAngle)
             return False
     except IndexError:
