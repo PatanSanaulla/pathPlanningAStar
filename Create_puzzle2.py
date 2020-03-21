@@ -170,7 +170,7 @@ def showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues):
                               markersize=15, label='Blue stars')
     plt.legend(handles=[blue_line])
 
-    plt.show()
+    #plt.show()
 
     xTrace = []
     yTrace = []
