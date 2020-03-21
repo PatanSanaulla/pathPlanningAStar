@@ -1,13 +1,17 @@
 from Create_puzzle2 import *
 from datetime import datetime
+import math
 import sys
 
 #Global Variables
 START_POINT = [] # [x, y]
 GOAL_POINT = [] # [x, y]
-STEPS_LIST = []
+#STEPS_LIST = set([])
+VISITED = []
+THRESHOLD = 0.5
 STEP_OBJECT_LIST = []
 STEP_SIZE = 1 			#Default step size
+THETA = math.pi/6       #Default 30 degrees
 
     
 #Definition of Class Step:
@@ -17,9 +21,10 @@ class step:
 	#parent: Object of class step
 	#position: the x,y values of the current step
 	#cost: cost of the step to move from the parent to the current position 
-	def __init__(self, parent, position, cost):
+	def __init__(self, parent, position, angle, cost):
 		self.position = position # [x, y]
 		self.parent = parent
+		self.angle = angle
 		if parent == None:
 			self.costToCome = 0.0
 		else:
@@ -27,148 +32,40 @@ class step:
 		self.costToGo = float(( (GOAL_POINT[0]-self.position[0])**2 + (GOAL_POINT[1]-self.position[1])**2 )**(0.5)) #Eucleadian Distance
 		#self.costToGo = abs(self.position[0]-GOAL_POINT[0])+abs(self.position[1]-GOAL_POINT[1]) #Manhattan Distance
 		#self.costToGo = max(abs(self.position[0] - GOAL_POINT[0]), abs(self.position[1] - GOAL_POINT[1]))  # Diagonal Distance
-
-
 		self.addToGraph()
 
+	def __lt__(self, other):
+		return self.costToCome+self.costToGo < other.costToCome+other.costToGo
 
-	def addToGraph(self):
-		if self.position in STEPS_LIST:
-			index = STEPS_LIST.index(self.position)
-			if self.costToCome+self.costToGo < STEP_OBJECT_LIST[index].costToCome+STEP_OBJECT_LIST[index].costToGo:
-				STEP_OBJECT_LIST[index] = self
-		else:
-			if self.parent == None or self.costToGo < self.parent.costToGo:
-				STEPS_LIST.append(self.position) 
-				STEP_OBJECT_LIST.append(self)
 
-	def moveUp(self):
-		if(self.position[1] > 0):
-			newPosition = [self.position[0], self.position[1]-STEP_SIZE]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
+	def addToGraph(self): 
+		STEP_OBJECT_LIST.append(self)
+
+
+	def generateSteps(self):
+		for i in range(int(180/30)-1):
+			angle = (THETA*i)+self.angle#math.radians(self.angle)
+			newX = thresholding((math.cos(angle)*STEP_SIZE)+self.position[0])
+			newY = thresholding((math.sin(angle)*STEP_SIZE)+self.position[1])
+			newPosition = [newX, newY]
+			if newX >= 0 and newX <= MAX_X and newY >= 0 and newY <= MAX_Y and (isValidStep(newPosition, RADIUS+CLEARANCE) == True):
 				try:
 					if(self.parent.position == newPosition):
-						pass #going back to the parent
+						pass
 					else:
-						newStep = step(self,newPosition, float(STEP_SIZE)) #cost 1.0
+						newStep = step(self, newPosition, angle, float(STEP_SIZE)) #cost 1.0
 				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE))
-		else:
-			return 
+					newStep = step(self, newPosition, angle, float(STEP_SIZE)) #cost 1.0
+			else:
+				return
 
-	def moveUpRight(self):
-		if(self.position[1] > 0 and self.position[0] < MAX_X):
-			newPosition = [self.position[0]+STEP_SIZE, self.position[1]-STEP_SIZE]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(2*STEP_SIZE)**(0.5))
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(2*STEP_SIZE)**(0.5))
-		else:
-			return 
-
-	def moveRight(self):
-		if(self.position[0] < MAX_X):
-			newPosition = [self.position[0]+STEP_SIZE, self.position[1]]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(STEP_SIZE))                        
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE))                  
-		else:
-
-			return 
-
-	def moveDownRight(self):
-		if(self.position[1] < MAX_Y and self.position[0] < MAX_X):
-			newPosition = [self.position[0]+STEP_SIZE, self.position[1]+STEP_SIZE]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(STEP_SIZE*2)**(0.5))
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE*2)**(0.5))
-		else:
-			return
 	
-	def moveDown(self):
-		if(self.position[1] < MAX_Y):
-			newPosition = [self.position[0], self.position[1]+STEP_SIZE]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(STEP_SIZE))
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE))
-		else:
-			return
+#def stepsTakenToCompute():
+#	for eachStep in STEP_OBJECT_LIST:
+#		colorTheStep(eachStep.position, eachStep)
+#		if eachStep.position == GOAL_POINT:
+#			break
 
-	def moveDownLeft(self):
-		if(self.position[1] < MAX_Y and self.position[0] > 0):
-			newPosition = [self.position[0]-STEP_SIZE, self.position[1]+STEP_SIZE]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(STEP_SIZE*2)**(0.5))
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE*2)**(0.5))
-		else:
-			return
-
-	def moveLeft(self):
-		if(self.position[0] > 0):
-			newPosition = [self.position[0]-STEP_SIZE, self.position[1]]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(STEP_SIZE))
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE))
-		else:
-			return
-
-	def moveUpLeft(self):
-		if(self.position[1] > 0 and self.position[0] > 0):
-			newPosition = [self.position[0]-STEP_SIZE, self.position[1]-STEP_SIZE]
-			if isValidStep(newPosition, RADIUS+CLEARANCE) == True:
-				try:
-					if(self.parent.position == newPosition):
-						pass #going back to the parent
-					else:
-						newStep = step(self,newPosition, float(STEP_SIZE*2)**(0.5))
-				except AttributeError:
-                    #if parent is not present
-					newStep = step(self,newPosition, float(STEP_SIZE*2)**(0.5))
-		else:
-			return
-
-def stepsTakenToCompute():
-	for eachStep in STEP_OBJECT_LIST:
-		colorTheStep(eachStep.position, traverseColor, RADIUS)
-		if eachStep.position == GOAL_POINT:
-			break
-        
 
 def backtrack(stepObj):
 	pathValues = []
@@ -178,10 +75,39 @@ def backtrack(stepObj):
 	pathValues.append(stepObj.position)
     
 	pathValues.reverse()
-	showPath(pathValues, RADIUS) 
+	showPath(START_POINT, GOAL_POINT,STEP_OBJECT_LIST, pathValues)
 
+def inGoal(position):
+	x, y = position[0], position[1]
+	if ((x - GOAL_POINT[0]) ** 2 + (y - GOAL_POINT[1]) ** 2 <= (1.5)**2):
+		return True
+	else:
+		return False
 
+def isVisited(stepObj):
+    #posAndAngle = [stepObj.position[0], stepObj.position[1]), round(stepObj.angle)]
+    xPoint = int(stepObj.position[0]/THRESHOLD)-1
+    yPoint = int(stepObj.position[1]/THRESHOLD)-1
+    anglePoint = (int(stepObj.angle/THETA)%12)-1
+    try:
+        if VISITED[xPoint][yPoint][anglePoint] == 1:
+            #if posAndAngle in STEPS_LIST:
+            return True
+        else:
+            VISITED[xPoint][yPoint][anglePoint] = 1
+            #STEPS_LIST.add(posAndAngle)
+            return False
+    except IndexError:
+        print("index issue")
 
+def thresholding(val):
+	splitData = str(val).split('.')
+	intData = int(splitData[0])
+	decimalData = int(splitData[1][0])
+	if decimalData >= 5:
+		return intData+0.5
+	else:
+		return intData+0.0
 
 #MAIN CODE
 try:
@@ -197,12 +123,11 @@ try:
 except:
     print("Please enter the proper points: Example: 200 30 30")
     print("Exiting the Algorithm")
-    pygame.quit()
     sys.exit(0)
     
 #To switch the orgin to the top
-START_POINT[1] = MAX_Y - START_POINT[1]
-GOAL_POINT[1] = MAX_Y - GOAL_POINT[1]
+START_POINT[1] = START_POINT[1]
+GOAL_POINT[1] = GOAL_POINT[1]
 
 isPossible = 0
 
@@ -220,44 +145,33 @@ else:
 if isPossible == 2: 
 	now = datetime.now().time()
 	print("start time: ",now)
-
+    
+	VISITED = [ [ [ 0 for i in range(int(2*math.pi/THETA)) ] for j in range(int(MAX_Y/THRESHOLD)) ] for k in range(int(MAX_X/THRESHOLD)) ]
 	#Starting the linked list with start point as the root
-	root = step(None, START_POINT[:2], 0) 
+	root = step(None, START_POINT[:2], math.radians(START_POINT[2]), 0) 
 
-	for eachStep in STEP_OBJECT_LIST:
+	eachStep = STEP_OBJECT_LIST.pop(0)
+	isVisited(eachStep) 
 
-		if eachStep.position == GOAL_POINT:
-			print("Reached the Goal Node!!")
-			now = datetime.now().time()
-			print("Found at time: ",now)
-			break
-		else:
-			eachStep.moveLeft()
-			eachStep.moveDown()
-			eachStep.moveRight()
-			eachStep.moveUp()
-			eachStep.moveUpLeft()
-			eachStep.moveDownLeft()
-			eachStep.moveDownRight()
-			eachStep.moveUpRight()
+	while inGoal(eachStep.position) == False:#to keep traversing until the goal area is found
+		eachStep.generateSteps()
+		print(eachStep.position)
+		STEP_OBJECT_LIST.sort()
 
-	index = STEPS_LIST.index(GOAL_POINT[:2])
-	print("Total Cost to reach the final Point:",STEP_OBJECT_LIST[index].costToCome)
-	#Once the whole generation is completed begin the animation
-	stepsTakenToCompute()
-	#To show the backtrack on the graph
-	backtrack(STEP_OBJECT_LIST[index])
+		while True:
+			eachStep = STEP_OBJECT_LIST.pop(0) #to Keep popping until a unvisted node is found
+			if isVisited(eachStep) == False:
+				break
+        
+	print("Total Cost to reach the final Point:",eachStep.costToCome)
+	#stepsTakenToCompute() #Once the whole generation is completed begin the animation
+    
+	backtrack(eachStep) #To show the backtrack on the graph
 	now = datetime.now().time()
 	print("end time: ",now)
 else:
     print("Exiting the Algorithm")
-    pygame.quit()
     sys.exit(0)
 
-while True:
-	for inst in pygame.event.get():
-		if inst.type == pygame.QUIT:
-			pygame.quit()
-			quit()
 
-	pygame.display.update()
+
