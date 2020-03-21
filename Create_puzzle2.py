@@ -1,187 +1,193 @@
-import pygame
-import pygame.gfxdraw
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation
+plt.style.use('seaborn-pastel')
+import numpy as np
 import math
-
-pygame.init()
 
 MAX_X = 300
 MAX_Y = 200
 
-# Building the obstacle space in pygame
+plotPolygon = np.array([(25, 185), (75, 185), (100, 150), (75, 120), (50, 150), (20, 120)], dtype='int')
 
-pygame.init()
+plotRectangle = np.array([(30, 67.5), (35, 76), (100, 38.6), (95, 30)], dtype='int')
 
-white = (255,255,255)
-backgroundColor = (0,0,0) #black
-obstacleColor = (255,0,0) #red
-startColor = (0,255,0) #green
-pathColor = (0,0,255) #blue
-traverseColor = (255,255,0) #yellow
+plotRhombus = np.array([(225, 40), (250, 25), (225, 10), (200, 25)], dtype='int')
 
-gameDisplay = pygame.display.set_mode((MAX_X,MAX_Y))
-gameDisplay.fill(backgroundColor)
+plotCircle = [(25), (225, 150)]
 
-pygame.draw.circle(gameDisplay, obstacleColor, (225,50), 25)
-#Drawing Polygon
-pygame.draw.polygon(gameDisplay, obstacleColor, ((25,15),(75,15),(100,50),(75,80),(50,50),(20,80)))
-#Drawing Rectangle
-pygame.draw.polygon(gameDisplay, obstacleColor, ((95,170),(30,132.5),(35,124),(100,161.4)))
-#Drawing Rhombus
-pygame.draw.polygon(gameDisplay, obstacleColor, ((200,175),(225,160),(250,175),(225,190)))
+plotEllipse = [(80, 40), (150, 100)]
 
-pygame.draw.ellipse(gameDisplay, obstacleColor, (110, 80, 80, 40))
+def solveLine(obsCoords1, obsCoords2, x, y):
+    x1 = obsCoords1[0]
+    y1 = obsCoords1[1]
 
-###########################################################################################
+    x2 = obsCoords2[0]
+    y2 = obsCoords2[1]
+
+    if y1 == y2:
+        slope = y - y2
+        return slope
+    if x1 == x2:
+        slope = x - x2
+        return slope
+    slope = (y - y2) - ((x - x2) * (y1 - y2)) / (x1 - x2)
+    return slope
+
+def isValidStep(position, stretch):
+    x = position[0]
+    y = position[1]
+
+    flag = 0
+
+    # check if point is in circle shaped obstacle or not
+    if ((x - 225) ** 2 + (y - 150) ** 2 - 25 ** 2) <= 0:
+        flag = False
+        return flag
+
+    if ((x - 150) / (40 + stretch)) ** 2 + ((y - 100) / (20 + stretch)) ** 2 - 1 <= 0:
+        flag = False
+        return flag
+
+    rhombusCoords = [(200 - stretch,25),(225,(40 + stretch)),( 250 + stretch,25),(225,(10 - stretch))]
+
+    rectangleCoords = [(95 - math.floor((75 + stretch) * math.sqrt(3)/2), 30 - math.floor((75 + stretch)/2)),
+                        (95 - math.floor((75 + stretch)*math.sqrt(3)/2) + math.floor((10 + stretch)*math.sqrt(1)/2),30 - math.floor((75 + stretch)/2) - math.floor((10 + stretch)*math.sqrt(3)/2)),
+                        (95 + math.floor((10 + stretch)/2),30 - math.floor(10*math.sqrt(3)/2)),
+                        (95 - math.floor(stretch/2),30 + math.floor(stretch*math.sqrt(3)/2))]
+
+    # Polygon divided into 4 triangles:
+
+    firstTriangleCoords = [(20 - stretch,120 + stretch),(25 - stretch,185 - stretch), (50,150 + stretch)]
+    secondTriangleCoords = [(25 - stretch,185 - stretch),(75 + stretch,185 - stretch), (50,150 + stretch)]
+    thirdTriangleCoords = [(75 + stretch,185 - stretch),(100 + stretch,150 - stretch), (50,150 + stretch)]
+    fourthTriangleCoords = [(100 + stretch,150 - stretch),(75 + stretch,120 + stretch), (50,150 + stretch)]
 
 
+    # Obstacle check for robot in first traingle
 
-def colorTheStep(position, color, RADIUS):
-    for inst in pygame.event.get():
-        if inst.type == pygame.QUIT:
-            pygame.quit()
-            quit()
-    if RADIUS == None or RADIUS == 0:
-        pygame.gfxdraw.pixel(gameDisplay, position[0], position[1], color)
+    planeTriag1 = []
+
+    for i in range(len(firstTriangleCoords)):
+        if i == len(firstTriangleCoords)-1:
+            planeTriag1.append(solveLine(firstTriangleCoords[i], firstTriangleCoords[0], x, y))
+            break
+        planeTriag1.append(solveLine(firstTriangleCoords[i],firstTriangleCoords[i+1],x,y))
+
+    if planeTriag1[0]>=0 and planeTriag1[1]>=0 and planeTriag1[2]<=0 :
+        flag = False
+        return flag
+
+    # Obstacle check for robot in second traingle
+
+    planeTriag2 = []
+    for i in range(len(secondTriangleCoords)):
+        if i == len(secondTriangleCoords) - 1:
+            planeTriag2.append(solveLine(secondTriangleCoords[i], secondTriangleCoords[0], x, y))
+            break
+        planeTriag2.append(solveLine(secondTriangleCoords[i], secondTriangleCoords[i + 1], x, y))
+    if (planeTriag2[0] >= 0 and planeTriag2[1] <= 0 and planeTriag2[2] <= 0):
+        flag = False
+        return flag
+
+    # Obstacle check for robot in third traingle
+
+    planeTriag3 = []
+    for i in range(len(thirdTriangleCoords)):
+        if i == len(thirdTriangleCoords) - 1:
+            planeTriag3.append(solveLine(thirdTriangleCoords[i], thirdTriangleCoords[0], x, y))
+            break
+        planeTriag3.append(solveLine(thirdTriangleCoords[i], thirdTriangleCoords[i + 1], x, y))
+
+    if (planeTriag3[0] >= 0 and planeTriag3[1] <= 0 and planeTriag3[2] >= 0):
+        flag = False
+        return flag
+
+    # Obstacle check for robot in fourth traingle
+
+    planeTriag4 = []
+    for i in range(len(fourthTriangleCoords)):
+        if i == len(fourthTriangleCoords) - 1:
+            planeTriag4.append(solveLine(fourthTriangleCoords[i], fourthTriangleCoords[0], x, y))
+            break
+        planeTriag4.append(solveLine(fourthTriangleCoords[i], fourthTriangleCoords[i + 1], x, y))
+
+    if (planeTriag4[0] <= 0 and planeTriag4[1] <= 0 and planeTriag4[2] >= 0):
+        flag = False
+        return flag
+
+    # Obstacle check for the Rhombus
+
+    planeRhombus = []
+    for i in range(len(rhombusCoords)):
+        if i == len(rhombusCoords) - 1:
+            planeRhombus.append(solveLine(rhombusCoords[i], rhombusCoords[0], x, y))
+            break
+        planeRhombus.append(solveLine(rhombusCoords[i], rhombusCoords[i + 1], x, y))
+    if (planeRhombus[0] >= 0 and planeRhombus[1] >= 0 and planeRhombus[2] <= 0 and planeRhombus[3] <= 0 ):
+        flag = False
+        return flag
+
+    # Obstacle check for the Rectangle
+
+    planeRectangle = []
+    for i in range(len(rectangleCoords)):
+        if i == len(rectangleCoords) - 1:
+            planeRectangle.append(solveLine(rectangleCoords[i], rectangleCoords[0], x, y))
+            break
+        planeRectangle.append(solveLine(rectangleCoords[i], rectangleCoords[i + 1], x, y))
+    if (planeRectangle[0] >= 0 and planeRectangle[1] >= 0 and planeRectangle[2] <= 0 and planeRectangle[3] <= 0):
+        flag = False
+        return flag
     else:
-        pygame.draw.circle(gameDisplay, color, (position[0],position[1]), RADIUS)
-    pygame.display.update()
+        flag = True
+        return flag
 
+def showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues):
+    fig = plt.figure()
+    fig.set_dpi(100)
+    fig.set_size_inches(8.5, 6)
 
-def showPath(pathList, RADIUS):
-	for step in pathList:
-		if RADIUS == None or RADIUS == 0:
-			pygame.gfxdraw.pixel(gameDisplay, step[0], step[1], pathColor)
-		else:
-			pygame.draw.circle(gameDisplay, pathColor, (step[0], step[1]), RADIUS)
-		pygame.display.update()
-    
-#################################################################################################################################################
-# Function to Check for Obstacles
-def isValidStep(point,pad):  # def obstacleCheck_rigid
-    x = point[0]
-    y = point[1]
-    #theta = point[2]
-    #Shift for rhombus
-    d1=pad*math.sqrt((0.6)**2+1)
-    d2=pad*math.sqrt((0.6)**2+1)
-    d3=pad*math.sqrt((-0.6)**2+1)
-    d4=pad*math.sqrt((-0.6)**2+1)
+    axis = plt.axes(xlim=(0, MAX_X), ylim=(0, MAX_Y))
+    xTrace = []
+    yTrace = []
 
-    #shift for rectangle
+    xTrack = []
+    yTrack = []
 
-    d5=pad*math.sqrt((1.72)**2+1)
-    d6=pad*math.sqrt((1.7)**2+1)
-    d7=pad*math.sqrt((-0.577)**2+1)
-    d8=pad*math.sqrt((-0.575)**2+1)
+    traced, = plt.plot([], [], 'o', color = 'red')
+    tracked, = plt.plot([], [], 'o', color = 'blue')
 
-    #shift for Polygon part1
+    def init():
+        axis.set_xlim(0,MAX_X)
+        axis.set_ylim(0,MAX_Y)
+        return traced, tracked,
 
-    d9=pad*math.sqrt((13)**2+1)
-    d10=pad*math.sqrt((1)**2+1)
+    def animate(itr):
+        if itr < len(STEP_OBJECT_LIST):
+            for eachNode in STEP_OBJECT_LIST:
+                xTrace.append(eachNode.position[0])
+                yTrace.append(eachNode.position[1])
+                traced.set_data(xTrace,yTrace)
 
-    #shift for Polygon part2
-    d11=pad*math.sqrt((-1.4)**2+1)
-    d12=pad*math.sqrt((1.2)**2+1)
-    d13=pad*math.sqrt((-1.2)**2+1)
+            for trackNode in pathValues:
+                xTrack.append(trackNode[0])
+                yTrack.append(trackNode[1])
+                tracked.set_data(xTrack,yTrack)
 
-    #partition
-    d14=pad*math.sqrt((1.4)**2+1)
-    d15=pad*math.sqrt((1.4)**2+1)
+        return traced, tracked,
 
-    flag = True
-    if (x < pad) or (x > 300-pad) or (y < pad) or (y > 200-pad):
-        flag = False
+    anim = FuncAnimation(fig, animate, frames = len(STEP_OBJECT_LIST)+1, init_func = init, interval = 10, blit = False, repeat = False)
+    circle = plt.Circle((plotCircle[1]), plotCircle[0], fc=None)
+    rectangle = plt.Polygon(plotRectangle)
+    rhombus = plt.Polygon(plotRhombus)
+    polygon = plt.Polygon(plotPolygon)
+    ellipse = Ellipse((plotEllipse[1]), plotEllipse[0][0], plotEllipse[0][1], 0)
+    obstacles = [circle, rectangle, rhombus, polygon, ellipse]
+    goalLoc = plt.scatter(GOAL_POINT[0], GOAL_POINT[1], s = 10, color = 'g')
+    startLoc = plt.scatter(START_POINT[0], START_POINT[1], s = 10, color = 'black')
 
-    #check if point is in circle shaped obstacle or not
-
-    if ((x - 225)**2 + (y-50)**2 - (25+pad)**2) <= 0:
-        flag = False
-
-    #check if point is in rhombus shaped obstacle or not
-
-    if (0.6 * x + y - 325 - d1 <= 0) and (0.6 * x + y - 295 + d2 >= 0) and (y - 0.6 * x - 55 - d3 <= 0) and (y - 0.6 * x - 25 + d4 >= 0):
-        flag = False
-
-    #check if point is in rectangle shaped obstacle or not
-    if (1.72 * x + y - 333.4 - d5 <= 0) and (1.7 * x + y - 183.5 + d6 >= 0) and (y - 0.577 * x - 115.19 - d7 <= 0) and (y - 0.575 * x - 103.862 + d8 >= 0):
-        flag = False
-
-    #check if point is in polygon shaped obstacle or not : 1st Quad
-    if (y + 13 * x - 340 + d9 >= 0) and (y - (15-pad) >= 0) and (y + x - 100 - d10 <= 0) and (y + 1.4 * x - 120 - d14 <= 0):
-        flag = False
-
-    #check if point is in polygon shaped obstacle or not : 12nd Quad
-    if (y - 1.4 * x + 90 + d11 >= 0) and (y + 1.2 * x - 170 - d12 <= 0) and (y - 1.2 * x + 10 - d13 <= 0) and (y + 1.4*x - 120 + d15 >= 0):
-        flag = False
-
-    #check if point is in eclipse shaped obstacle or not
-    if ((x-150)/(40+pad))**2 + ((y-100)/(20+pad))**2 - 1 <=0:
-        flag = False
-
-    return flag
-
-
-def isValidStep2(position, CLEARANCE):
-	pos = tuple(position)
-	if(inObs1(pos, CLEARANCE) == True) or (inObs2(pos, CLEARANCE) == True) or (inObs3(pos, CLEARANCE) == True) or (inObs4(pos, CLEARANCE) == True) or (inObs5(pos, CLEARANCE) == True):
-		return False
-	else:
-		return True
-
-
-def inObs1(pos, CLEARANCE):
-	if pos in obs1_pts:
-		return True
-	else:
-		x, y = pos[0], pos[1]
-		if ((8 * x + 5 * y <= 1610+math.ceil(CLEARANCE*10.67)) and (-38 * x + 65 * y >= 6730-math.ceil(CLEARANCE*106.16)) and (9 * x + 5 * y >= 935-math.ceil(CLEARANCE*10.67)) and (37 * x - 65 * y >= -7535-math.ceil(CLEARANCE*106.16))):
-            #if ((8 * x + 5 * y <= 1610+(CLEARANCE**3)) and (-38 * x + 65 * y >= 6730-((CLEARANCE+1)**4)) and (9 * x + 5 * y >= 935-(CLEARANCE**3)) and (37 * x - 65 * y >= -7535-((CLEARANCE+1)**4))):
-			obs1_pts.add(pos)
-			return True
-		else:
-			return False
-
-def inObs2(pos, CLEARANCE):
-	if pos in obs2_pts:
-		return True
-	else:
-		x, y = pos[0], pos[1]
-		if ((13 * x + y >= 340-math.ceil(CLEARANCE*12)) and (x + y <= 100+math.ceil(CLEARANCE)) and (-7 * x + 5 * y >= -100-math.ceil(CLEARANCE*90.16)) and (y >= 15-(CLEARANCE)) or (-6 * x + 5 * y <= -50+math.ceil(CLEARANCE*10)) and (6 * x + 5 * y <= 850+math.ceil(CLEARANCE*10.67)) and (7 * x - 5 * y <= 450+math.ceil(CLEARANCE*10.67)) and \
-		 (y >= 15-(CLEARANCE)) and (-7 * x + 5 * y <= -100+math.ceil(CLEARANCE*15))):
-			obs2_pts.add(pos)
-			return True
-		else:
-			return False
-			
-def inObs3(pos, CLEARANCE):
-	if pos in obs3_pts:
-		return True
-	else:
-		x, y = pos[0], pos[1]
-		if (((x - 150) ** 2) / ((40+CLEARANCE)**2) + ((y - 100) ** 2) / ((20+CLEARANCE)**2) <= 1):
-			obs3_pts.add(pos)
-			return True
-		else:
-			return False
-
-def inObs4(pos, CLEARANCE):
-	if pos in obs4_pts:
-		return True
-	else:
-		x, y = pos[0], pos[1]
-		if ((x - 225) ** 2 + (y - 50) ** 2 <= (25+CLEARANCE)**2):
-			obs4_pts.add(pos)
-			return True
-		else:
-			return False
-
-def inObs5(pos, CLEARANCE):
-	if pos in obs5_pts:
-		return True
-	else:
-		x, y = pos[0], pos[1] 
-		if (3 * x + 5 * y <= 1625+(CLEARANCE*7)) and  (5 * y - 3 * x <= 275+(CLEARANCE*7)) and (3 * x + 5 * y >= 1475-(CLEARANCE*5)) and (5 * y - 3 * x >= 125-(CLEARANCE*5)):
-			obs5_pts.add(pos)
-			return True
-		else:
-			return False
+    for item in obstacles:
+        plt.gca().add_patch(item)
+    plt.show()
