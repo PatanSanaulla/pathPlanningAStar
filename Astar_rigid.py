@@ -59,13 +59,11 @@ class step:
 			else:
 				return
 
-	
 #def stepsTakenToCompute():
 #	for eachStep in STEP_OBJECT_LIST:
 #		colorTheStep(eachStep.position, eachStep)
 #		if eachStep.position == GOAL_POINT:
 #			break
-
 
 def backtrack(stepObj):
 	pathValues = []
@@ -76,6 +74,7 @@ def backtrack(stepObj):
     
 	pathValues.reverse()
 	showPath(START_POINT, GOAL_POINT,STEP_OBJECT_LIST, pathValues)
+
 
 def inGoal(position):
 	x, y = position[0], position[1]
@@ -165,6 +164,7 @@ if isPossible == 2:
         
 	print("Total Cost to reach the final Point:",eachStep.costToCome)
 	#stepsTakenToCompute() #Once the whole generation is completed begin the animation
+
     
 	backtrack(eachStep) #To show the backtrack on the graph
 	now = datetime.now().time()
