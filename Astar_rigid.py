@@ -1,8 +1,9 @@
 from Create_puzzle2 import *
 from datetime import datetime
-from more_itertools import locate
+# from more_itertools import locate
 import math
 import sys
+import time
 
 #Global Variables
 START_POINT = [] # [x, y]
@@ -12,7 +13,7 @@ EXPLORED = []
 VISITED = []
 THRESHOLD = 0.5
 STEP_OBJECT_LIST = []
-COST_MAP = []
+COST_MAP_DICT = {}
 STEP_SIZE = 1 			#Default step size
 THETA = math.pi/6       #Default 30 degrees
 
@@ -31,12 +32,12 @@ class step:
 		self.xPoint = int(position[0]/THRESHOLD)-1
 		self.yPoint = int(position[1]/THRESHOLD)-1
 		self.anglePoint = (int(angle/THETA)%12)-1
-		self.costMapIndex = len(COST_MAP)
+		#self.costMapIndex = len(COST_MAP)
 		if parent == None:
 			self.costToCome = 0.0
 		else:
 			self.costToCome = parent.costToCome + cost;
-		self.cost = self.costToCome + float(( (GOAL_POINT[0]-self.position[0])**2 + (GOAL_POINT[1]-self.position[1])**2 )**(0.5)) #Eucleadian Distance
+		self.cost = self.costToCome + 2*float(( (GOAL_POINT[0]-self.position[0])**2 + (GOAL_POINT[1]-self.position[1])**2 )**(0.5)) #Eucleadian Distance
 		#abs(self.position[0]-GOAL_POINT[0])+abs(self.position[1]-GOAL_POINT[1]) #Manhattan Distance
 		#max(abs(self.position[0] - GOAL_POINT[0]), abs(self.position[1] - GOAL_POINT[1]))  # Diagonal Distance
 		self.addToGraph()
@@ -48,13 +49,20 @@ class step:
 	def addToGraph(self): 
 		if self.isVisited() == False:
 			self.visitStep()
+			EXPLORED.append(self)
 			STEP_OBJECT_LIST.append(self)
 		else:
-			if self.cost < VISITED[self.xPoint][self.yPoint][self.anglePoint]:
-				index = locate(STEP_OBJECT_LIST, lambda stp: stp.xPoint == self.xPoint and stp.yPoint == self.yPoint and stp.anglePoint == self.anglePoint)
-				STEP_OBJECT_LIST.pop(index)
+			#it is visited hence finding its cost and current index
+			pointKeys = list(COST_MAP_DICT.keys())
+			costValues = list(COST_MAP_DICT.values())
+			index = pointKeys.index((self.xPoint, self.yPoint, self.anglePoint))
+			if self.cost < costValues[index]:
+				try:
+					EXPLORED.remove(STEP_OBJECT_LIST[index])
+				except:
+					pass #not present to remove form the list
 				self.visitStep()
-				STEP_OBJECT_LIST.append(self)
+				EXPLORED.append(self)
 
 	def isVisited(self):
 		if VISITED[self.xPoint][self.yPoint][self.anglePoint] == 0:
@@ -63,13 +71,14 @@ class step:
 			return True
 
 	def visitStep(self):
-		VISITED[self.xPoint][self.yPoint][self.anglePoint] = self.cost
+		VISITED[self.xPoint][self.yPoint][self.anglePoint] = 1
+		COST_MAP_DICT[(self.xPoint, self.yPoint, self.anglePoint)] = self.cost
 
 
 	def generateSteps(self):
-		EXPLORED.append(self)
-		for i in range(int(180/30)-1):
-			angle = (THETA*i)+self.angle#math.radians(self.angle)
+		#EXPLORED.append(self)
+		for i in [-(math.pi/3), -(math.pi/6), 0, (math.pi/6), (math.pi/3)]:
+			angle = i+self.angle
 			newX = thresholding((math.cos(angle)*STEP_SIZE)+self.position[0])
 			newY = thresholding((math.sin(angle)*STEP_SIZE)+self.position[1])
 			newPosition = [newX, newY]
@@ -82,7 +91,7 @@ class step:
 				except AttributeError:
 					newStep = step(self, newPosition, angle, float(STEP_SIZE)) #cost 1.0
 			else:
-				return
+				pass
 
 def backtrack(stepObj):
 	pathValues = []
@@ -92,6 +101,8 @@ def backtrack(stepObj):
 	pathValues.append([stepObj.position[0], stepObj.position[1], stepObj.angle])
     
 	pathValues.reverse()
+	print("length of step_object_list",len(STEP_OBJECT_LIST))
+	print("length of the pathvalues", len(pathValues))
 	showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues)
 
 
@@ -145,30 +156,35 @@ else:
 
 #To check if both the values are possible to work with in the puzzle
 if isPossible == 2: 
-	now = datetime.now().time()
-	print("start time: ",now)
+	# now = datetime.now().time()
+	# print("start time: ",now)
     
 	VISITED = [ [ [ 0 for i in range(int(2*math.pi/THETA)) ] for j in range(int(MAX_Y/THRESHOLD)) ] for k in range(int(MAX_X/THRESHOLD)) ]
 	#Starting the linked list with start point as the root
 	root = step(None, START_POINT[:2], math.radians(START_POINT[2]), 0) 
 
-	
+	start_time = time.time()
 	while True: #to keep traversing until the goal area is found
-		eachStep = STEP_OBJECT_LIST.pop(0)
+		eachStep = EXPLORED.pop(0)
 		#print(eachStep.position, math.degrees(eachStep.angle))
 		eachStep.generateSteps()		
-		STEP_OBJECT_LIST.sort()
+		EXPLORED.sort()
 
 		if inGoal(eachStep.position) == True:
 			break
-
-
+	end_time = time.time()
+		#while True:
+		#	eachStep = STEP_OBJECT_LIST.pop(0) #to Keep popping until a unvisted node is found
+		#	if eachStep.isVisited() == False:
+		#		break
+        
 	print("Total Cost to reach the final Point:",eachStep.costToCome)
-	
-    #Once the whole generation is completed begin the animation    
+	#stepsTakenToCompute() #Once the whole generation is completed begin the animation
+
+	# now = datetime.now().time()
+	print("total time for A star in seconds: ", end_time-start_time)
 	backtrack(eachStep) #To show the backtrack on the graph
-	now = datetime.now().time()
-	print("end time: ",now)
+
 else:
     print("Exiting the Algorithm")
     sys.exit(0)
