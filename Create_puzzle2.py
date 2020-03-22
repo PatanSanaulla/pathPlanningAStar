@@ -138,7 +138,7 @@ def isValidStep(position, stretch):
         flag = True
         return flag
 
-def showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues, fileLocation):
+def showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues):
     fig = plt.figure()
     fig.set_dpi(100)
     fig.set_size_inches(8.5, 6)
@@ -155,6 +155,8 @@ def showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues, fileLocation
 
     xTrackpoint2 = []
     yTrackpoint2 = []
+
+    imageList = []
 
     axis = fig.add_subplot(111, aspect = 'equal', autoscale_on = False, xlim = (0,MAX_X), ylim = (0, MAX_Y))
     #axis = plt.axes(xlim=(0, MAX_X), ylim=(0, MAX_Y))
@@ -175,38 +177,49 @@ def showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues, fileLocation
     goalLoc = plt.plot(GOAL_POINT[0], GOAL_POINT[1], color='green', markersize=1)
 
     startLoc = plt.plot(START_POINT[0], START_POINT[1], color='black', markersize=1)
+    for item in obstacles:
+        axis.add_patch(item)
+
     for itr in range(1, len(STEP_OBJECT_LIST)):
-        startTrace = STEP_OBJECT_LIST[itr].parent
-        xTracepoint1.append(startTrace.position[0])
-        yTracepoint1.append(startTrace.position[1])
-        xTracepoint2.append(STEP_OBJECT_LIST[itr].position[0] - startTrace.position[0])
-        yTracepoint2.append(STEP_OBJECT_LIST[itr].position[1] - startTrace.position[1])
-        axis.quiver(np.array((xTracepoint1)), np.array((yTracepoint1)), np.array((xTracepoint2)), np.array((yTracepoint2)), units='xy', scale=1, color='yellow')
-        plt.savefig("example"+str(count)+".png", dpi=1920)
-        print(len(STEP_OBJECT_LIST))
-        count = count + 1
-    if (len(pathValues) > 0):
-        for itr in range(1, len(pathValues)):
-            xTrackpoint1.append(pathValues[itr - 1][0])
-            yTrackpoint1.append(pathValues[itr - 1][1])
-            xTrackpoint2.append(pathValues[itr][0] - pathValues[itr - 1][0])
-            yTrackpoint2.append(pathValues[itr][1] - pathValues[itr - 1][1])
-            axis.quiver(np.array((xTrackpoint1)), np.array((yTrackpoint1)), np.array((xTrackpoint2)), np.array((yTrackpoint2)), units='xy', scale=1, color='blue')
-            plt.savefig("example"+str(count)+".png", dpi=1920)
+        try:
+            startTrace = STEP_OBJECT_LIST[itr*100].parent
+            xTracepoint1 = startTrace.position[0]
+            yTracepoint1 = startTrace.position[1]
+            xTracepoint2 = STEP_OBJECT_LIST[itr*100].position[0] - startTrace.position[0]
+            yTracepoint2 = STEP_OBJECT_LIST[itr*100].position[1] - startTrace.position[1]
+            axis.quiver(xTracepoint1, yTracepoint1, xTracepoint2, yTracepoint2, units='xy', scale=1, color='yellow')
+            plt.savefig("frame"+str(count)+".png", dpi=1920)
+            imageList.append(cv2.imread("frame"+str(count)+".png"))
+            # print(len(STEP_OBJECT_LIST))
+            print("count:",count)
             count = count + 1
+        except :
+            break
+
+    # if (len(pathValues) > 0):
+    for itr in range(1, len(pathValues)):
+        xTrackpoint1 = pathValues[itr - 1][0]
+        yTrackpoint1 = pathValues[itr - 1][1]
+        xTrackpoint2 = pathValues[itr][0] - pathValues[itr - 1][0]
+        yTrackpoint2 = pathValues[itr][1] - pathValues[itr - 1][1]
+        axis.quiver(xTracepoint1, yTracepoint1, xTracepoint2, yTracepoint2, units='xy', scale=1, color='blue')
+        plt.savefig("frame" + str(count) + ".png", dpi=1920)
+        imageList.append(cv2.imread("frame" + str(count) + ".png"))
+        print("count:", count)
+        count = count + 1
 
 
 
-    images = glob.glob(str(fileLocation) + "/*")
-    sortedImages = np.sort(images)
-    output = cv2.VideoWriter("Simulation Video.avi", cv2.VideoWriter_fourcc(*'XVID'), 20.0, (300, 200))
-    for image in sortedImages:
-        display = cv2.imread(file)
-        display = cv2.resize(display, (300, 200))
+
+    # images = glob.glob(str(fileLocation) + "/*")
+    # sortedImages = np.sort(images)
+    output = cv2.VideoWriter("Simulation_Video.avi", cv2.VideoWriter_fourcc(*'XVID'), 20.0, (720, 500))
+    for image in imageList:
+        # display = cv2.imread(file)
+        display = cv2.resize(image, (720, 500))
         output.write(display)
     output.release()
 
-    for item in obstacles:
-        axis.add_patch(item)
+
 
     plt.show()
