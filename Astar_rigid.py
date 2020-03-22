@@ -1,5 +1,6 @@
 from Create_puzzle2 import *
 from datetime import datetime
+from more_itertools import locate
 import math
 import sys
 
@@ -11,6 +12,7 @@ EXPLORED = []
 VISITED = []
 THRESHOLD = 0.5
 STEP_OBJECT_LIST = []
+COST_MAP = []
 STEP_SIZE = 1 			#Default step size
 THETA = math.pi/6       #Default 30 degrees
 
@@ -29,6 +31,7 @@ class step:
 		self.xPoint = int(position[0]/THRESHOLD)-1
 		self.yPoint = int(position[1]/THRESHOLD)-1
 		self.anglePoint = (int(angle/THETA)%12)-1
+		self.costMapIndex = len(COST_MAP)
 		if parent == None:
 			self.costToCome = 0.0
 		else:
@@ -43,7 +46,24 @@ class step:
 
 
 	def addToGraph(self): 
-		STEP_OBJECT_LIST.append(self)
+		if self.isVisited() == False:
+			self.visitStep()
+			STEP_OBJECT_LIST.append(self)
+		else:
+			if self.cost < VISITED[self.xPoint][self.yPoint][self.anglePoint]:
+				index = locate(STEP_OBJECT_LIST, lambda stp: stp.xPoint == self.xPoint and stp.yPoint == self.yPoint and stp.anglePoint == self.anglePoint)
+				STEP_OBJECT_LIST.pop(index)
+				self.visitStep()
+				STEP_OBJECT_LIST.append(self)
+
+	def isVisited(self):
+		if VISITED[self.xPoint][self.yPoint][self.anglePoint] == 0:
+			return False
+		else:
+			return True
+
+	def visitStep(self):
+		VISITED[self.xPoint][self.yPoint][self.anglePoint] = self.cost
 
 
 	def generateSteps(self):
@@ -72,7 +92,7 @@ def backtrack(stepObj):
 	pathValues.append([stepObj.position[0], stepObj.position[1], stepObj.angle])
     
 	pathValues.reverse()
-	showPath(START_POINT, GOAL_POINT, EXPLORED, pathValues)
+	showPath(START_POINT, GOAL_POINT, STEP_OBJECT_LIST, pathValues)
 
 
 def inGoal(position):
@@ -82,18 +102,6 @@ def inGoal(position):
 	else:
 		return False
 
-def isVisited(stepObj):
-    #posAndAngle = [stepObj.position[0], stepObj.position[1]), round(stepObj.angle)]
-    try:
-        if VISITED[stepObj.xPoint][stepObj.yPoint][stepObj.anglePoint] == 1:
-            #if posAndAngle in STEPS_LIST:
-            return True
-        else:
-            VISITED[stepObj.xPoint][stepObj.yPoint][stepObj.anglePoint] = 1
-            #STEPS_LIST.add(posAndAngle)
-            return False
-    except IndexError:
-        print("index issue")
 
 def thresholding(val):
 	splitData = str(val).split('.')
@@ -144,23 +152,20 @@ if isPossible == 2:
 	#Starting the linked list with start point as the root
 	root = step(None, START_POINT[:2], math.radians(START_POINT[2]), 0) 
 
-	eachStep = STEP_OBJECT_LIST.pop(0)
-	isVisited(eachStep) 
-
-	while inGoal(eachStep.position) == False:#to keep traversing until the goal area is found
-		eachStep.generateSteps()
-		print(eachStep.position, math.degrees(eachStep.angle))
+	
+	while True: #to keep traversing until the goal area is found
+		eachStep = STEP_OBJECT_LIST.pop(0)
+		#print(eachStep.position, math.degrees(eachStep.angle))
+		eachStep.generateSteps()		
 		STEP_OBJECT_LIST.sort()
 
-		while True:
-			eachStep = STEP_OBJECT_LIST.pop(0) #to Keep popping until a unvisted node is found
-			if isVisited(eachStep) == False:
-				break
-        
-	print("Total Cost to reach the final Point:",eachStep.costToCome)
-	#stepsTakenToCompute() #Once the whole generation is completed begin the animation
+		if inGoal(eachStep.position) == True:
+			break
 
-    
+
+	print("Total Cost to reach the final Point:",eachStep.costToCome)
+	
+    #Once the whole generation is completed begin the animation    
 	backtrack(eachStep) #To show the backtrack on the graph
 	now = datetime.now().time()
 	print("end time: ",now)
